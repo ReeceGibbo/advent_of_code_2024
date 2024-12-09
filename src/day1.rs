@@ -3,60 +3,57 @@ use std::fs;
 
 #[derive(Debug)]
 struct Day1Data {
-    total_difference: i32,
-    total_difference_part_2: i32,
+    difference_total: i32,
+    multiplication_total: i32,
 }
 
-fn read_data() -> Result<String, std::io::Error> {
-    let content = fs::read_to_string("assets/day1_input.txt")?;
+fn read_data(asset_path: &str) -> Result<String, std::io::Error> {
+    let content = fs::read_to_string(asset_path)?;
     Ok(content)
 }
 
-fn calculate_stuff(data: &String) -> Day1Data {
-    let mut left_side: Vec<i32> = Vec::new();
-    let mut right_side: Vec<i32> = Vec::new();
-    let mut right_side_hash: HashMap<i32, i32> = HashMap::new();
+fn calculate_day1_data(data: &str) -> Day1Data {
+    let mut left_numbers: Vec<i32> = Vec::new();
+    let mut right_numbers: Vec<i32> = Vec::new();
+    let mut right_numbers_freq: HashMap<i32, i32> = HashMap::new();
 
     for line in data.lines() {
         let parts: Vec<&str> = line.split_whitespace().collect();
 
-        if parts.len() == 2 {
-            let part1 = parts[0].parse::<i32>().unwrap();
-            let part2 = parts[1].parse::<i32>().unwrap();
-
-            left_side.push(part1);
-
-            right_side.push(part2);
-            let right_side_data = right_side_hash.entry(part2).or_insert(0);
-            *right_side_data += 1;
-
-            println!("Part 1: {}, Part 2: {} - Multiplier: {}", part1, part2, right_side_data);
-        } else {
-            eprintln!("Line does not contain exactly two parts: {}", line);
+        if parts.len() != 2 {
+            eprintln!("Skipping malformed line: {}", line);
+            continue;
         }
+
+        let part1 = parts[0]
+            .parse::<i32>()
+            .expect("Failed to parse part1 as i32");
+        let part2 = parts[1]
+            .parse::<i32>()
+            .expect("Failed to parse part2 as i32");
+
+        left_numbers.push(part1);
+        right_numbers.push(part2);
+
+        *right_numbers_freq.entry(part2).or_insert(0) += 1;
     }
 
-    left_side.sort_unstable();
-    right_side.sort_unstable();
+    left_numbers.sort_unstable();
+    right_numbers.sort_unstable();
 
     let mut total_difference = 0;
     let mut total_difference_multiplier = 0;
 
-    for i in 0..left_side.len() {
-        let num1 = left_side[i];
-        let num2 = right_side[i];
+    for (num1, num2) in left_numbers.iter().zip(right_numbers.iter()) {
+        total_difference += (num1 - num2).abs();
 
-        let difference = (num1 - num2).abs();
-        total_difference += difference;
-
-        let num1_multiplier = right_side_hash.get(&num1).unwrap_or(&0);
-        let difference_multiplier = (num1 * num1_multiplier).abs();
-        total_difference_multiplier += difference_multiplier;
+        let frequency = right_numbers_freq.get(num1).unwrap_or(&0);
+        total_difference_multiplier += (num1 * frequency).abs();
     }
 
     Day1Data {
-        total_difference,
-        total_difference_part_2: total_difference_multiplier,
+        difference_total: total_difference,
+        multiplication_total: total_difference_multiplier,
     }
 }
 
@@ -72,17 +69,18 @@ mod tests {
 2   5
 1   3
 3   9
-3   3"
-            .to_string();
+3   3";
 
-        let result = calculate_stuff(&test_data);
-        println!("Result: {:?}", result);
+        let result = calculate_day1_data(&test_data);
+        assert_eq!(result.difference_total, 11);
+        assert_eq!(result.multiplication_total, 31);
     }
 
     #[test]
     fn main_data() {
-        let test_data = read_data().unwrap();
-        let result = calculate_stuff(&test_data);
-        println!("Result: {:?}", result);
+        let test_data = read_data("assets/day1_input.txt").expect("Could not find test file.");
+        let result = calculate_day1_data(&test_data);
+        assert_eq!(result.difference_total, 1882714);
+        assert_eq!(result.multiplication_total, 19437052);
     }
 }
